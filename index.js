@@ -1,7 +1,6 @@
 const { createSchema, createYoga } = require("graphql-yoga");
 const path = require("path");
 const fs = require("fs");
-const { createServer } = require("http");
 const express = require("express");
 
 const schema = createSchema({
