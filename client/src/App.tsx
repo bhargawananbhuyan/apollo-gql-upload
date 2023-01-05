@@ -1,8 +1,8 @@
 import { gql, useMutation } from "@apollo/client";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent } from "react";
 
 const MUTATION = gql`
-  mutation SingleUpload($file: Upload!) {
+  mutation SingleUpload($file: File!) {
     singleUpload(file: $file) {
       url
     }
@@ -10,13 +10,7 @@ const MUTATION = gql`
 `;
 
 const App = () => {
-  const [imgUrl, setImgUrl] = useState<string>("");
-
-  const [mutate] = useMutation(MUTATION, {
-    onCompleted: (data) => {
-      setImgUrl(data.singleUpload?.url);
-    },
-  });
+  const [mutate] = useMutation(MUTATION);
 
   const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files![0];
@@ -26,7 +20,6 @@ const App = () => {
   return (
     <div>
       <input type="file" required onChange={handleChange} />
-      <img src={imgUrl} alt="" style={{ width: "400px", height: "auto" }} />
     </div>
   );
 };

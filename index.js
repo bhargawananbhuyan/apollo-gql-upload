@@ -1,65 +1,51 @@
-const express = require("express");
-const { ApolloServer, gql } = require("apollo-server-express");
-const { GraphQLUpload, graphqlUploadExpress } = require("graphql-upload");
-const { finished } = require("stream/promises");
+const { createSchema, createYoga } = require("graphql-yoga");
 const path = require("path");
 const fs = require("fs");
+const { createServer } = require("http");
 
-const typeDefs = gql`
-  scalar Upload
+const schema = createSchema({
+  typeDefs: /* GraphQL */ `
+    scalar File
 
-  type File {
-    url: String!
-  }
+    type Query {
+      hello: String!
+    }
 
-  type Query {
-    hello: String!
-  }
+    type UploadResponse {
+      url: String!
+    }
 
-  type Mutation {
-    singleUpload(file: Upload!): File!
-  }
-`;
-
-const resolvers = {
-  Upload: GraphQLUpload,
-
-  Query: {
-    hello: () => "Hello, world!",
-  },
-
-  Mutation: {
-    singleUpload: async (_, { file }) => {
-      const { createReadStream, filename } = await file;
-      const stream = createReadStream();
-      const out = fs.createWriteStream(
-        path.join(__dirname, `public/images/${filename}`)
-      );
-      stream.pipe(out);
-      await finished(out);
-      return { url: `http://localhost:4000/images/${filename}` };
+    type Mutation {
+      singleUpload(file: File!): UploadResponse!
+    }
+  `,
+  resolvers: {
+    Query: {
+      hello: () => "hello world!",
+    },
+    Mutation: {
+      singleUpload: async (_, { file }) => {
+        const stream = file.stream();
+        await fs.promises.writeFile(
+          path.join(__dirname, `public/images/${file.name}`),
+          stream
+        );
+        return { url: `http://localhost:4000/images/${file.name}` };
+      },
     },
   },
-};
+});
 
-(async () => {
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-    csrfPrevention: false,
-    cache: "bounded",
-  });
+const yoga = createYoga({ schema });
+const httpServer = createServer(yoga);
 
-  await server.start();
+// to serve static assets to frontend, you need express
+/*
+	const app = express();
+	app.use(express.static(path.join(__dirname, "public")));
+	app.use("/graphql", yoga);
+*/
 
-  const app = express();
-
-  // middlewares
-  app.use(graphqlUploadExpress());
-  app.use(express.static(path.join(__dirname, "public")));
-
-  server.applyMiddleware({ app });
-
-  await new Promise((resolve) => app.listen({ port: 4000 }, resolve));
-  console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`);
-})();
+httpServer.listen(4000, () => {
+  console.info("Server is running on http://localhost:4000");
+});
