@@ -2,6 +2,7 @@ const { createSchema, createYoga } = require("graphql-yoga");
 const path = require("path");
 const fs = require("fs");
 const { createServer } = require("http");
+const express = require("express");
 
 const schema = createSchema({
   typeDefs: /* GraphQL */ `
@@ -37,15 +38,12 @@ const schema = createSchema({
 });
 
 const yoga = createYoga({ schema });
-const httpServer = createServer(yoga);
 
 // to serve static assets to frontend, you need express
-/*
-	const app = express();
-	app.use(express.static(path.join(__dirname, "public")));
-	app.use("/graphql", yoga);
-*/
+const app = express();
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/graphql", yoga);
 
-httpServer.listen(4000, () => {
+app.listen(4000, () => {
   console.info("Server is running on http://localhost:4000");
 });
